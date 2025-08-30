@@ -60,8 +60,11 @@ export default function Expenses() {
     },
   });
 
-  const { data: expenses, isLoading: isExpensesLoading } = useQuery<any[]>({
+  const { data: expenses, isLoading: isExpensesLoading, error: expensesError } = useQuery<any[]>({
     queryKey: ["/api/expenses"],
+    retry: 1,
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
   });
 
   const createExpenseMutation = useMutation({
@@ -155,18 +158,42 @@ export default function Expenses() {
     );
   }
 
+  // Handle API errors
+  if (expensesError) {
+    return (
+      <div className="flex min-h-screen bg-rosae-black">
+        <Sidebar />
+        <div className="flex-1 p-6">
+          <div className="bg-rosae-dark-gray border border-gray-600 rounded-lg p-6 text-white">
+            <h2 className="text-2xl font-bold mb-4">Error Loading Expenses</h2>
+            <p className="text-gray-300 mb-4">There was a problem loading the expenses data.</p>
+            <Button 
+              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/expenses"] })}
+              className="bg-rosae-red hover:bg-rosae-dark-red"
+            >
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Ensure expenses is an array
+  const expensesArray = Array.isArray(expenses) ? expenses : [];
+
   // Calculate total expenses
-  const totalExpenses = expenses?.reduce((sum: number, expense: any) => sum + Number(expense.amount), 0) || 0;
+  const totalExpenses = expensesArray.reduce((sum: number, expense: any) => sum + Number(expense.amount), 0);
 
   // Group expenses by category
-  const expensesByCategory = expenses?.reduce((acc: any, expense: any) => {
+  const expensesByCategory = expensesArray.reduce((acc: any, expense: any) => {
     const category = expense.category;
     if (!acc[category]) {
       acc[category] = 0;
     }
     acc[category] += Number(expense.amount);
     return acc;
-  }, {}) || {};
+  }, {});
 
   return (
     <div className="flex min-h-screen bg-rosae-black">
@@ -365,7 +392,7 @@ export default function Expenses() {
               <div className="flex items-center justify-center h-64 text-gray-400">
                 Loading expenses...
               </div>
-            ) : expenses && expenses.length > 0 ? (
+            ) : expensesArray.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -377,7 +404,7 @@ export default function Expenses() {
                     </tr>
                   </thead>
                   <tbody className="text-white">
-                    {expenses.map((expense: any) => (
+                    {expensesArray.map((expense: any) => (
                       <tr key={expense.id} className="border-b border-gray-700 hover:bg-gray-800/50" data-testid={`row-expense-${expense.id}`}>
                         <td className="py-4">
                           <div className="flex items-center">

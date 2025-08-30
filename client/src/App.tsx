@@ -11,7 +11,6 @@ import Analytics from "@/pages/analytics";
 import Expenses from "@/pages/expenses";
 import LeaveManagement from "@/pages/leave-management";
 import UserManagement from "@/pages/user-management";
-import AdminPanel from "@/pages/admin-panel";
 import Configuration from "@/pages/configuration";
 import Verification from "@/pages/verification";
 import NotFound from "@/pages/not-found";
@@ -39,7 +38,6 @@ function Router() {
       <Route path="/expenses" component={Expenses} />
       <Route path="/leave-management" component={LeaveManagement} />
       <Route path="/user-management" component={UserManagement} />
-      <Route path="/admin-panel" component={AdminPanel} />
       <Route path="/configuration" component={Configuration} />
       <Route path="/verification" component={Verification} />
       <Route component={NotFound} />

@@ -73,6 +73,10 @@ export default function Verification() {
       }
 
       if (booking) {
+        // Store the booking ID in a variable before setting state
+        const bookingId = booking.id;
+        console.log("Found booking with ID:", bookingId);
+        
         setSelectedBooking(booking);
         setEditForm({
           totalAmount: booking.totalAmount?.toString() || "",
@@ -96,6 +100,7 @@ export default function Verification() {
         setSelectedBooking(null);
       }
     } catch (error) {
+      console.error("Search error:", error);
       toast({
         title: "Search Error",
         description: "Failed to search for booking",
@@ -109,20 +114,49 @@ export default function Verification() {
     mutationFn: async (updateData: any) => {
       return await apiRequest("PATCH", `/api/bookings/${selectedBooking.id}`, updateData);
     },
-    onSuccess: () => {
+    onSuccess: async (_, variables) => {
       toast({
         title: "Success",
         description: "Booking updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/bookings"] });
       setIsEditing(false);
-      // Refresh the booking data
-      searchBooking();
+      
+      // Instead of calling searchBooking which might lose the booking ID,
+      // directly fetch the updated booking by ID
+      try {
+        const response = await fetch(`/api/bookings/${selectedBooking.id}`);
+        if (response.ok) {
+          const updatedBooking = await response.json();
+          setSelectedBooking(updatedBooking);
+          setEditForm({
+            totalAmount: updatedBooking.totalAmount?.toString() || "",
+            cashAmount: updatedBooking.cashAmount?.toString() || "",
+            upiAmount: updatedBooking.upiAmount?.toString() || "",
+            snacksAmount: updatedBooking.snacksAmount?.toString() || "",
+            snacksCash: updatedBooking.snacksCash?.toString() || "",
+            snacksUpi: updatedBooking.snacksUpi?.toString() || "",
+            isEighteenPlus: updatedBooking.isEighteenPlus !== false,
+            visited: updatedBooking.visited !== false,
+            reasonNotEighteen: updatedBooking.reasonNotEighteen || "",
+            reasonNotVisited: updatedBooking.reasonNotVisited || "",
+            customerName: updatedBooking.customerName || ""
+          });
+        } else {
+          toast({
+            title: "Warning",
+            description: "Booking was updated but couldn't refresh details",
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching updated booking:", error);
+      }
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to update booking",
+        description: error.message || "Failed to update booking",
         variant: "destructive"
       });
     }

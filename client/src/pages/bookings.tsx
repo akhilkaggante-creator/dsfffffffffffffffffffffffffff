@@ -55,6 +55,20 @@ export default function Bookings() {
       return;
     }
   }, [isAuthenticated, isLoading, toast]);
+  
+  // Check URL parameters for actions
+  useEffect(() => {
+    // Check if the URL has an action parameter to open the booking modal
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    
+    if (action === 'new') {
+      setIsBookingModalOpen(true);
+      // Remove the action parameter from URL to prevent reopening the modal on refresh
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, []);
 
   const { data, isLoading: isBookingsLoading, refetch, error: bookingsError } = useQuery({
     queryKey: ["/api/bookings", currentPage, pageSize, dateFilter, phoneFilter, bookingDateFilter, repeatCountFilter],

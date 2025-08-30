@@ -73,12 +73,6 @@ const adminOnlyItems = [
 
 const adminNavigationItems = [
   {
-    name: "Admin Panel",
-    href: "/admin-panel",
-    icon: Shield,
-    adminOnly: true,
-  },
-  {
     name: "Configuration",
     href: "/configuration",
     icon: Settings,
@@ -168,6 +162,28 @@ export function Sidebar() {
           const isActive = location === item.href || 
             (item.href === "/" && location === "/") ||
             (item.href !== "/" && location.startsWith(item.href));
+
+          // Handle special actions like new-booking
+          if (item.action === "new-booking") {
+            return (
+              <button
+                key={item.name}
+                onClick={(e) => {
+                  e.preventDefault();
+                  // Navigate to the bookings page and set a URL parameter to trigger the modal
+                  window.location.href = `${item.href}?action=new`;
+                }}
+                className={cn(
+                  "flex items-center px-6 py-3 text-gray-300 hover:text-white hover:bg-gray-700 transition-colors w-full text-left",
+                  isActive && "text-white bg-rosae-red/20 border-r-4 border-rosae-red"
+                )}
+                data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                <Icon className="mr-3 w-5 h-5" />
+                {item.name}
+              </button>
+            );
+          }
 
           return (
             <a
