@@ -159,6 +159,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           role: 'admin'
         };
         
+        // Ensure admin user exists in database
+        try {
+          await storage.upsertUser({
+            id: user.id,
+            email: user.email,
+            first_name: user.firstName,
+            last_name: user.lastName,
+            profile_image_url: null,
+            role: user.role
+          });
+          console.log('Admin user created/updated in database');
+        } catch (dbError) {
+          console.error('Error creating admin user in database:', dbError);
+        }
+        
         // Set session with claims structure to match isAuthenticated middleware
         (req as any).session.user = {
           claims: {

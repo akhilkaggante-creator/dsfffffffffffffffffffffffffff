@@ -10,6 +10,7 @@ export const db = drizzle(sqlite, { schema });
 export function initializeDatabase() {
   // Drop existing tables to ensure clean schema
   sqlite.exec(`
+    DROP TABLE IF EXISTS configurations;
     DROP TABLE IF EXISTS sales_reports;
     DROP TABLE IF EXISTS calendar_events;
     DROP TABLE IF EXISTS activity_logs;
@@ -17,8 +18,8 @@ export function initializeDatabase() {
     DROP TABLE IF EXISTS leave_applications;
     DROP TABLE IF EXISTS expenses;
     DROP TABLE IF EXISTS bookings;
-    DROP TABLE IF EXISTS users;
     DROP TABLE IF EXISTS sessions;
+    DROP TABLE IF EXISTS users;
   `);
   
   // Create tables with correct schema
@@ -137,6 +138,13 @@ export function initializeDatabase() {
       created_by TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (created_by) REFERENCES users(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS configurations (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_by TEXT,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
   `);
 }
