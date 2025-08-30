@@ -615,6 +615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateFilter: req.query.dateFilter as string | undefined,
         phoneFilter: req.query.phoneFilter as string | undefined,
         bookingDateFilter: req.query.bookingDateFilter as string | undefined,
+        repeatCountFilter: req.query.repeatCountFilter as string | undefined,
       };
       
       const result = await storage.getAllBookings(page, pageSize, filters);
@@ -640,6 +641,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Search bookings by phone number (must come before /:id route)
+  app.get('/api/bookings/search', isAuthenticated, async (req, res) => {
+    try {
+      const { phone } = req.query;
+      if (!phone) {
+        return res.status(400).json({ message: "Phone number is required" });
+      }
+      
+      const bookings = await storage.getBookingsByPhoneNumber(phone as string);
+      if (bookings.length === 0) {
+        return res.status(404).json({ message: "No bookings found for this phone number" });
+      }
+      res.json(bookings);
+    } catch (error) {
+      console.error("Error searching bookings by phone:", error);
+      res.status(500).json({ message: "Failed to search bookings" });
+    }
+  });
+
   // Get single booking by ID
   app.get('/api/bookings/:id', isAuthenticated, async (req, res) => {
     try {
@@ -654,22 +674,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching booking by ID:", error);
       res.status(500).json({ message: "Failed to fetch booking" });
-    }
-  });
-
-  // Search bookings by phone number
-  app.get('/api/bookings/search', isAuthenticated, async (req, res) => {
-    try {
-      const { phone } = req.query;
-      if (!phone) {
-        return res.status(400).json({ message: "Phone number is required" });
-      }
-      
-      const bookings = await storage.getBookingsByPhoneNumber(phone as string);
-      res.json(bookings);
-    } catch (error) {
-      console.error("Error searching bookings by phone:", error);
-      res.status(500).json({ message: "Failed to search bookings" });
     }
   });
 
@@ -999,8 +1003,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData = {
         guests: req.body.guests ? Number(req.body.guests) : undefined,
         phoneNumber: req.body.phoneNumber || null,
+        totalAmount: req.body.totalAmount ? Number(req.body.totalAmount) : undefined,
         cashAmount: req.body.cashAmount ? Number(req.body.cashAmount) : undefined,
         upiAmount: req.body.upiAmount ? Number(req.body.upiAmount) : undefined,
+        snacksAmount: req.body.snacksAmount ? Number(req.body.snacksAmount) : undefined,
+        snacksCash: req.body.snacksCash ? Number(req.body.snacksCash) : undefined,
+        snacksUpi: req.body.snacksUpi ? Number(req.body.snacksUpi) : undefined,
+        isEighteenPlus: req.body.isEighteenPlus !== undefined ? req.body.isEighteenPlus : undefined,
+        visited: req.body.visited !== undefined ? req.body.visited : undefined,
+        reasonNotEighteen: req.body.reasonNotEighteen !== undefined ? req.body.reasonNotEighteen : undefined,
+        reasonNotVisited: req.body.reasonNotVisited !== undefined ? req.body.reasonNotVisited : undefined,
+        customerName: req.body.customerName !== undefined ? req.body.customerName : undefined,
       };
       
       // Remove undefined fields

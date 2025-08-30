@@ -16,9 +16,7 @@ import { AlertCircle, Search, CheckCircle, Save, Phone } from "lucide-react";
 export default function Verification() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [bookingId, setBookingId] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [searchMethod, setSearchMethod] = useState<"id" | "phone">("id");
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   
@@ -27,6 +25,9 @@ export default function Verification() {
     totalAmount: "",
     cashAmount: "",
     upiAmount: "",
+    snacksAmount: "",
+    snacksCash: "",
+    snacksUpi: "",
     isEighteenPlus: true,
     visited: true,
     reasonNotEighteen: "",
@@ -49,12 +50,12 @@ export default function Verification() {
     }
   }, [isAuthenticated, isLoading, toast]);
 
-  // Search booking by ID or phone number
+  // Search booking by phone number
   const searchBooking = async () => {
-    if (!bookingId && !phoneNumber) {
+    if (!phoneNumber) {
       toast({
-        title: "Search Required",
-        description: "Please enter a booking ID or phone number",
+        title: "Phone Number Required",
+        description: "Please enter a phone number to search",
         variant: "destructive"
       });
       return;
@@ -63,18 +64,11 @@ export default function Verification() {
     try {
       let booking = null;
       
-      if (searchMethod === "id" && bookingId) {
-        const response = await fetch(`/api/bookings/${bookingId}`);
-        if (response.ok) {
-          booking = await response.json();
-        }
-      } else if (searchMethod === "phone" && phoneNumber) {
-        const response = await fetch(`/api/bookings/search?phone=${phoneNumber}`);
-        if (response.ok) {
-          const bookings = await response.json();
-          if (bookings.length > 0) {
-            booking = bookings[0]; // Get the most recent booking
-          }
+      const response = await fetch(`/api/bookings/search?phone=${phoneNumber}`);
+      if (response.ok) {
+        const bookings = await response.json();
+        if (bookings.length > 0) {
+          booking = bookings[0]; // Get the most recent booking
         }
       }
 
@@ -84,6 +78,9 @@ export default function Verification() {
           totalAmount: booking.totalAmount?.toString() || "",
           cashAmount: booking.cashAmount?.toString() || "",
           upiAmount: booking.upiAmount?.toString() || "",
+          snacksAmount: booking.snacksAmount?.toString() || "",
+          snacksCash: booking.snacksCash?.toString() || "",
+          snacksUpi: booking.snacksUpi?.toString() || "",
           isEighteenPlus: booking.isEighteenPlus !== false,
           visited: booking.visited !== false,
           reasonNotEighteen: booking.reasonNotEighteen || "",
@@ -136,6 +133,9 @@ export default function Verification() {
     const totalAmount = parseFloat(editForm.totalAmount);
     const cashAmount = parseFloat(editForm.cashAmount);
     const upiAmount = parseFloat(editForm.upiAmount);
+    const snacksAmount = parseFloat(editForm.snacksAmount) || 0;
+    const snacksCash = parseFloat(editForm.snacksCash) || 0;
+    const snacksUpi = parseFloat(editForm.snacksUpi) || 0;
 
     if (isNaN(totalAmount) || isNaN(cashAmount) || isNaN(upiAmount)) {
       toast({
@@ -155,10 +155,22 @@ export default function Verification() {
       return;
     }
 
+    if (snacksAmount > 0 && Math.abs((snacksCash + snacksUpi) - snacksAmount) > 0.01) {
+      toast({
+        title: "Snacks Amount Mismatch",
+        description: "Snacks Cash + UPI must equal snacks total",
+        variant: "destructive"
+      });
+      return;
+    }
+
     updateBookingMutation.mutate({
       totalAmount,
       cashAmount,
       upiAmount,
+      snacksAmount,
+      snacksCash,
+      snacksUpi,
       isEighteenPlus: editForm.isEighteenPlus,
       visited: editForm.visited,
       reasonNotEighteen: editForm.reasonNotEighteen,
@@ -199,49 +211,18 @@ export default function Verification() {
             <CardTitle className="text-white">Search Booking</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Search Method Toggle */}
-            <div className="flex space-x-4">
-              <Button
-                variant={searchMethod === "id" ? "default" : "outline"}
-                onClick={() => setSearchMethod("id")}
-                className={searchMethod === "id" ? "bg-rosae-red hover:bg-rosae-dark-red" : "border-gray-600 text-gray-300"}
-              >
-                Search by Booking ID
-              </Button>
-              <Button
-                variant={searchMethod === "phone" ? "default" : "outline"}
-                onClick={() => setSearchMethod("phone")}
-                className={searchMethod === "phone" ? "bg-rosae-red hover:bg-rosae-dark-red" : "border-gray-600 text-gray-300"}
-              >
-                Search by Phone Number
-              </Button>
-            </div>
-
             {/* Search Input */}
             <div className="flex space-x-4">
-              {searchMethod === "id" ? (
-                <div className="flex-1">
-                  <Label htmlFor="bookingId" className="text-gray-300">Booking ID</Label>
-                  <Input
-                    id="bookingId"
-                    value={bookingId}
-                    onChange={(e) => setBookingId(e.target.value)}
-                    placeholder="Enter booking ID"
-                    className="bg-gray-800 border-gray-600 text-white"
-                  />
-                </div>
-              ) : (
-                <div className="flex-1">
-                  <Label htmlFor="phoneNumber" className="text-gray-300">Phone Number</Label>
-                  <Input
-                    id="phoneNumber"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    placeholder="Enter phone number"
-                    className="bg-gray-800 border-gray-600 text-white"
-                  />
-                </div>
-              )}
+              <div className="flex-1">
+                <Label htmlFor="phoneNumber" className="text-gray-300">Phone Number</Label>
+                <Input
+                  id="phoneNumber"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  placeholder="Enter phone number"
+                  className="bg-gray-800 border-gray-600 text-white"
+                />
+              </div>
               <Button onClick={searchBooking} className="bg-rosae-red hover:bg-rosae-dark-red self-end">
                 <Search className="w-4 h-4 mr-2" />
                 Search
@@ -323,7 +304,7 @@ export default function Verification() {
                   )}
                 </div>
 
-                {/* Amounts */}
+                {/* Booking Amounts */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="totalAmount" className="text-gray-300">Total Amount</Label>
@@ -368,6 +349,55 @@ export default function Verification() {
                       />
                     ) : (
                       <p className="text-white">{formatCurrency(Number(selectedBooking.upiAmount))}</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Snacks Amounts */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-gray-600 pt-4">
+                  <div>
+                    <Label htmlFor="snacksAmount" className="text-gray-300">Snacks Total</Label>
+                    {isEditing ? (
+                      <Input
+                        id="snacksAmount"
+                        type="number"
+                        step="0.01"
+                        value={editForm.snacksAmount}
+                        onChange={(e) => setEditForm({...editForm, snacksAmount: e.target.value})}
+                        className="bg-gray-800 border-gray-600 text-white"
+                      />
+                    ) : (
+                      <p className="text-white">{formatCurrency(Number(selectedBooking.snacksAmount || 0))}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="snacksCash" className="text-gray-300">Snacks Cash</Label>
+                    {isEditing ? (
+                      <Input
+                        id="snacksCash"
+                        type="number"
+                        step="0.01"
+                        value={editForm.snacksCash}
+                        onChange={(e) => setEditForm({...editForm, snacksCash: e.target.value})}
+                        className="bg-gray-800 border-gray-600 text-white"
+                      />
+                    ) : (
+                      <p className="text-white">{formatCurrency(Number(selectedBooking.snacksCash || 0))}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="snacksUpi" className="text-gray-300">Snacks UPI</Label>
+                    {isEditing ? (
+                      <Input
+                        id="snacksUpi"
+                        type="number"
+                        step="0.01"
+                        value={editForm.snacksUpi}
+                        onChange={(e) => setEditForm({...editForm, snacksUpi: e.target.value})}
+                        className="bg-gray-800 border-gray-600 text-white"
+                      />
+                    ) : (
+                      <p className="text-white">{formatCurrency(Number(selectedBooking.snacksUpi || 0))}</p>
                     )}
                   </div>
                 </div>

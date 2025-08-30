@@ -34,6 +34,7 @@ export default function Bookings() {
   const [dateFilter, setDateFilter] = useState("");
   const [phoneFilter, setPhoneFilter] = useState("");
   const [bookingDateFilter, setBookingDateFilter] = useState("");
+  const [repeatCountFilter, setRepeatCountFilter] = useState("");
   const [filteredBookings, setFilteredBookings] = useState<any[]>([]);
   
   // Date range filter states
@@ -56,14 +57,15 @@ export default function Bookings() {
   }, [isAuthenticated, isLoading, toast]);
 
   const { data, isLoading: isBookingsLoading, refetch, error: bookingsError } = useQuery({
-    queryKey: ["/api/bookings", currentPage, pageSize, dateFilter, phoneFilter, bookingDateFilter],
+    queryKey: ["/api/bookings", currentPage, pageSize, dateFilter, phoneFilter, bookingDateFilter, repeatCountFilter],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
         pageSize: pageSize.toString(),
         ...(dateFilter && { dateFilter }),
         ...(phoneFilter && { phoneFilter }),
-        ...(bookingDateFilter && { bookingDateFilter })
+        ...(bookingDateFilter && { bookingDateFilter }),
+        ...(repeatCountFilter && { repeatCountFilter })
       });
       const response = await fetch(`/api/bookings?${params}`);
       if (!response.ok) {
@@ -234,6 +236,9 @@ export default function Bookings() {
                 <th>Total Amount</th>
                 <th>Cash</th>
                 <th>UPI</th>
+                <th>Snacks Total</th>
+                <th>Snacks Cash</th>
+                <th>Snacks UPI</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -252,6 +257,9 @@ export default function Bookings() {
                   <td>${formatCurrency(Number(booking.totalAmount))}</td>
                   <td>${formatCurrency(Number(booking.cashAmount))}</td>
                   <td>${formatCurrency(Number(booking.upiAmount))}</td>
+                  <td>${formatCurrency(Number(booking.snacksAmount || 0))}</td>
+                  <td>${formatCurrency(Number(booking.snacksCash || 0))}</td>
+                  <td>${formatCurrency(Number(booking.snacksUpi || 0))}</td>
                   <td><span class="status ${getPaymentStatus(Number(booking.totalAmount)) === 'full' ? 'yes' : 'partial'}">${getPaymentStatus(Number(booking.totalAmount)) === 'full' ? 'Full Payment' : 'Partial Payment'}</span></td>
                 </tr>
               `).join('')}
@@ -293,7 +301,7 @@ export default function Bookings() {
         
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          {(dateFilter || phoneFilter || bookingDateFilter || startDateFilter || endDateFilter) && (
+          {(dateFilter || phoneFilter || bookingDateFilter || repeatCountFilter || startDateFilter || endDateFilter) && (
             <div className="col-span-full flex justify-between items-center">
               <Button
                 onClick={handlePrint}
@@ -309,6 +317,7 @@ export default function Bookings() {
                   setDateFilter("");
                   setPhoneFilter("");
                   setBookingDateFilter("");
+                  setRepeatCountFilter("");
                   setStartDateFilter("");
                   setEndDateFilter("");
                 }}
@@ -380,6 +389,27 @@ export default function Bookings() {
               </button>
             )}
             <span className="text-xs text-gray-400 mt-1 block">Filter by booking date</span>
+          </div>
+          
+          <div className="relative">
+            <Input
+              type="number"
+              placeholder="Filter by repeat count"
+              className="bg-gray-800 border-gray-600 text-white pr-10"
+              value={repeatCountFilter}
+              onChange={(e) => setRepeatCountFilter(e.target.value)}
+              data-testid="input-repeat-count-filter"
+            />
+            {repeatCountFilter && (
+              <button 
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                onClick={() => setRepeatCountFilter("")}
+                data-testid="button-clear-repeat-count-filter"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            <span className="text-xs text-gray-400 mt-1 block">Filter by repeat count</span>
           </div>
           
           {/* Date range filters row */}

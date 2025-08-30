@@ -121,6 +121,7 @@ export const storage = {
     dateFilter?: string;
     phoneFilter?: string;
     bookingDateFilter?: string;
+    repeatCountFilter?: string;
   }) {
     const offset = (page - 1) * pageSize;
     
@@ -138,6 +139,10 @@ export const storage = {
     
     if (filters?.bookingDateFilter) {
       whereConditions.push(eq(bookings.bookingDate, filters.bookingDateFilter));
+    }
+    
+    if (filters?.repeatCountFilter) {
+      whereConditions.push(eq(bookings.repeatCount, Number(filters.repeatCountFilter)));
     }
     
     // Combine conditions with AND
